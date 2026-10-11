@@ -1,0 +1,72 @@
+name: Play (GitHub Pages)
+
+# Publishes web/ so the game is playable from a link - no clone, no install:
+#   https://<owner>.github.io/<repo>/
+#
+# The build artefacts (web/doom.wasm, web/assets/freedoom1.wad.gz) are committed,
+# so publishing is just a checkout and an upload: about 10 MB, no toolchain.
+
+on:
+  push:
+    branches:
+      - main
+      - arena/e4d79228-webgamefree
+    paths:
+      - "web/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Assemble the site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the artefacts are present
+        run: |
+          set -e
+          test -f web/index.html || { echo "web/index.html missing"; exit 1; }
+          test -f web/doom.wasm || { echo "web/doom.wasm missing - run ./build.sh"; exit 1; }
+          test -f web/assets/freedoom1.wad.gz || { echo "IWAD missing"; exit 1; }
+          echo "engine : $(du -h web/doom.wasm | cut -f1)"
+          echo "game   : $(du -h web/assets/freedoom1.wad.gz | cut -f1)"
+          echo "total  : $(du -sh web | cut -f1)"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the game
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+  deploy:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Summary
+        run: |
+          {
+            echo "### ☠ Play it"
+            echo
+            echo "[${{ steps.deployment.outputs.page_url }}](${{ steps.deployment.outputs.page_url }})"
+            echo
+            echo "Engine: doomgeneric (GPL-2.0) → WebAssembly · Data: Freedoom (BSD-3-Clause)"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -113,6 +113,29 @@ async function fetchWithProgress(url, onProgress) {
   return out;
 }
 
+/**
+ * Turn whatever the server sent us into an IWAD.
+ *
+ * The asset on disk is gzipped (9.8 MiB instead of 27.5 MiB), but hosts differ:
+ * some add `Content-Encoding: gzip` and hand the browser a decompressed body,
+ * some serve the file as-is.  Both are handled by sniffing the magic bytes, so
+ * the page works on any static host - GitHub Pages, a CDN, a local server -
+ * without configuration.
+ */
+async function toIwad(bytes) {
+  const gzipMagic = bytes[0] === 0x1f && bytes[1] === 0x8b;
+  const wadMagic = bytes[0] === 0x49 && bytes[1] === 0x57; // "IW"
+  let wad = bytes;
+
+  if (gzipMagic) wad = await decompressGzip(bytes);
+  else if (!wadMagic) throw new Error("the game data is neither gzip nor a WAD");
+
+  if (wad.length < 1048576 || !(wad[0] === 0x49 && wad[1] === 0x57 && wad[3] === 0x44)) {
+    throw new Error(`that file is not a usable IWAD (${wad.length} bytes)`);
+  }
+  return wad;
+}
+
 /** Gunzip with the platform decoder when possible, otherwise always works. */
 async function decompressGzip(bytes) {
   if (typeof DecompressionStream === "function") {
@@ -148,9 +171,9 @@ async function loadGame() {
       setProgress(0.1 + fraction * 0.5, `game data ${formatBytes(received)} / ${formatBytes(total)}`),
     );
 
-    setProgress(0.62, "decompressing the IWAD…");
+    setProgress(0.62, "unpacking the game data…");
     await new Promise((resolve) => setTimeout(resolve, 30)); // let the bar paint
-    const wad = await decompressGzip(wadGz);
+    const wad = await toIwad(wadGz);
     ui.factWad.textContent = `freedoom1.wad (${formatBytes(wad.length)})`;
 
     setProgress(0.72, "instantiating WebAssembly…");
