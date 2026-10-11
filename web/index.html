@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Freedoom in WebAssembly — DOOM, free and playable in your browser</title>
+<meta name="description" content="The DOOM engine (doomgeneric, GPL) and Freedoom game data (BSD), compressed and compiled to WebAssembly. No plugins, no install, no id Software assets." />
+<meta name="theme-color" content="#0b0b0f" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ------------------------------------------------------------------ -->
+  <!-- Top bar                                                             -->
+  <!-- ------------------------------------------------------------------ -->
+  <header id="bar">
+    <div class="brand">
+      <span class="skull" aria-hidden="true">☠</span>
+      <span class="brand-text">FREEDOOM<em>wasm</em></span>
+    </div>
+
+    <div class="stats" id="stats" aria-live="off">
+      <span class="stat"><b id="stat-fps">–</b> fps</span>
+      <span class="stat"><b id="stat-mem">–</b> MiB</span>
+      <span class="stat"><b id="stat-state">–</b></span>
+    </div>
+
+    <div class="actions">
+      <button id="btn-sfx"  class="toggle on"  title="Sound effects (S)">🔊 SFX</button>
+      <button id="btn-music" class="toggle on" title="Music (M)">🎵 Music</button>
+      <button id="btn-full" class="toggle"     title="Fullscreen (F)">⛶ Full</button>
+      <button id="btn-help" class="toggle on"  title="Controls (H)">? Help</button>
+    </div>
+  </header>
+
+  <!-- ------------------------------------------------------------------ -->
+  <!-- Stage                                                               -->
+  <!-- ------------------------------------------------------------------ -->
+  <main id="stage">
+    <div id="screen">
+      <canvas id="canvas" width="640" height="400"></canvas>
+
+      <!-- Loading / start overlay -->
+      <div id="overlay">
+        <div class="card">
+          <h1><span>☠</span> FREEDOOM <small>WebAssembly</small></h1>
+          <p id="overlay-text">
+            Free, open source DOOM: the engine is the GPL DOOM source
+            (doomgeneric), the game data is Freedoom Phase 1 (BSD).
+            Both live on this page — no plugin, no installer, no id Software assets.
+          </p>
+
+          <div id="progress" class="progress"><div id="progress-fill"></div></div>
+          <p id="progress-text" class="muted">starting…</p>
+
+          <button id="btn-start" class="primary" disabled>Loading…</button>
+
+          <ul class="facts">
+            <li><b id="fact-wasm">doom.wasm</b> engine, compiled from C</li>
+            <li><b id="fact-wad">freedoom1.wad</b> game data, gzipped in transit</li>
+            <li>runs offline once loaded · saves to local storage</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Touch controls (shown on touch devices) -->
+      <div id="touch" hidden>
+        <div class="pad" id="touch-move">
+          <button data-key="up">▲</button>
+          <button data-key="left">◀</button>
+          <button data-key="down">▼</button>
+          <button data-key="right">▶</button>
+        </div>
+        <div class="pad right">
+          <button data-key="fire" class="big">FIRE</button>
+          <button data-key="use">USE</button>
+          <button data-key="run">RUN</button>
+          <button data-key="map">MAP</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ------------------------------------------------------------------ -->
+  <!-- Help panel                                                          -->
+  <!-- ------------------------------------------------------------------ -->
+  <aside id="help" class="panel">
+    <h2>Controls</h2>
+    <table class="keys">
+      <tr><td>← ↑ → ↓</td><td>walk / turn</td></tr>
+      <tr><td>Ctrl <span class="or">or Ctrl-click</span></td><td>fire</td></tr>
+      <tr><td>Space</td><td>open doors, flip switches</td></tr>
+      <tr><td>Shift</td><td>run</td></tr>
+      <tr><td>Alt</td><td>strafe</td></tr>
+      <tr><td>, and .</td><td>strafe left / right</td></tr>
+      <tr><td>1…7</td><td>weapons</td></tr>
+      <tr><td>Tab</td><td>automap</td></tr>
+      <tr><td>Esc</td><td>menu</td></tr>
+      <tr><td>Enter</td><td>use / confirm</td></tr>
+      <tr><td>F5 / F9</td><td>quicksave / quickload</td></tr>
+      <tr><td>F2 / F3 / F4</td><td>save · load · volume</td></tr>
+      <tr><td>F, M, S, H</td><td>fullscreen · music · sfx · this panel</td></tr>
+    </table>
+    <p class="muted">
+      Click the screen for mouse turning — move the mouse to turn, left button
+      fires. Press Esc to release the pointer.
+    </p>
+    <p class="muted" id="help-notes"></p>
+  </aside>
+
+  <footer id="colophon">
+    <span>Engine: <a href="https://github.com/ozkl/doomgeneric" target="_blank" rel="noreferrer">doomgeneric</a> (GPL-2.0) · Data: <a href="https://freedoom.github.io" target="_blank" rel="noreferrer">Freedoom</a> (BSD-3-Clause) · Toolchain: Zig → wasm32-wasi</span>
+    <span class="muted">Not affiliated with id Software. DOOM is a trademark of id Software.</span>
+  </footer>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

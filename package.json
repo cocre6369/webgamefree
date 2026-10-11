@@ -1,0 +1,19 @@
+{
+  "name": "webgamefree-doom",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DOOM (doomgeneric) + Freedoom, compiled to WebAssembly, playable in the browser with no plugins and no install.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "scripts": {
+    "build": "./build.sh",
+    "serve": "node serve.mjs",
+    "smoke": "node tools/smoke.mjs",
+    "decompile": "node tools/decompile.mjs",
+    "compress": "node tools/compress-wad.mjs"
+  },
+  "devDependencies": {
+    "binaryen": "132.0.0",
+    "wabt": "1.0.39"
+  }
+}

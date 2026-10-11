@@ -1,0 +1,10 @@
+# Build scratch space (see build.sh) - never commit the toolchain or objects
+.tools/
+.build/
+obj/
+*.o
+*.wasm.tmp
+node_modules/
+
+# Local server logs
+*.log
