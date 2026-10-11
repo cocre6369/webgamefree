@@ -50,6 +50,12 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          # Try to switch Pages on automatically (Source: GitHub Actions) using
+          # the workflow's own token.  If the repository's settings do not allow
+          # that, this step says so and the one-time manual switch is:
+          #   Settings -> Pages -> Source: "GitHub Actions"
+          enablement: true
 
       - name: Upload the game
         uses: actions/upload-pages-artifact@v3
