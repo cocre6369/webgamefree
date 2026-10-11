@@ -58,8 +58,8 @@ node tools/decompile.mjs --full   # + the whole module as .wat and as C (wasm2c)
 
 The round trip closes: this project's `void dg_tick(void)` becomes a WebAssembly
 export, and decompiling the built module gives back
-`void w2c_doom_dg_tick(w2c_doom*)` — a C function again, alongside all 387
-others that make up the engine.
+`void w2c_doom_dg_tick(w2c_doom*)` — a C function again, alongside the 342
+other functions that make up the engine.
 
 | artefact | size |
 |---|---|

@@ -278,7 +278,7 @@ and [Binaryen](https://github.com/WebAssembly/binaryen):
 
 * it decodes the module's sections by hand (types, imports, functions, memory,
   exports) to produce exact tables rather than guesses — the WAT text alone
-  cannot tell you which of 388 anonymous functions is exported without this
+  cannot tell you which of 343 anonymous functions is exported without this
   mapping;
 * `docs/decompiled/api.md` lists all 23 imports and 18 exports with C
   signatures recovered from the type section, plus what each one is for;
@@ -286,7 +286,7 @@ and [Binaryen](https://github.com/WebAssembly/binaryen):
   text with their names restored from the export table;
 * `--full` additionally dumps `doom.wat` (the entire module as text) and
   `doom.c` + `doom.h`, produced by WABT's `wasm2c`, which reconstructs the whole
-  engine as C - 388 C functions, the memory helpers, and the import
+  engine as C - 343 C functions, the memory helpers, and the import
   declarations. It is mechanical, unreadable C, but it compiles, and it shows
   the round trip closing:
 
@@ -302,8 +302,8 @@ and [Binaryen](https://github.com/WebAssembly/binaryen):
   Those files are ~14 MB combined, so they are generated on demand and
   git-ignored rather than committed.
 
-The interesting result of reading that output: the module contains **388
-functions**, and only 18 of them are exported. The whole browser↔engine contract
+The interesting result of reading that output: the module contains **366 functions** (343 of its own plus 23 imports), and only
+  18 of them are exported. The whole browser↔engine contract
 is 18 functions and one 48 MiB memory. Everything else — the renderer, the
 physics, the AI, the WAD parser — is sealed inside and cannot be touched by
 JavaScript, which is exactly what you want from a port like this.

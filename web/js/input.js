@@ -221,7 +221,11 @@ export function attachMouse(doom, canvas, options = {}) {
 
   const onClick = () => {
     if (document.pointerLockElement !== canvas) {
-      canvas.requestPointerLock?.();
+      try {
+        canvas.requestPointerLock?.()?.catch?.(() => {});
+      } catch {
+        /* pointer lock denied (e.g. inside an iframe) */
+      }
     }
   };
 

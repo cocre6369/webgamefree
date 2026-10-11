@@ -250,7 +250,7 @@ async function start() {
 
   ui.overlay.classList.add("hidden");
   ui.canvas.focus?.();
-  ui.canvas.requestPointerLock?.();
+  lockPointer();
 
   try {
     if (!state.audio) {
@@ -305,7 +305,7 @@ function attachInput() {
   state.mouse = attachMouse(state.doom, ui.canvas);
   state.touchControl = attachTouch(state.doom, ui.touch, ui.touch);
   ui.canvas.addEventListener("mousedown", (event) => {
-    if (event.button === 0 && document.pointerLockElement !== ui.canvas) ui.canvas.requestPointerLock?.();
+    if (event.button === 0 && document.pointerLockElement !== ui.canvas) lockPointer();
   });
 }
 
@@ -328,10 +328,15 @@ function setMusic(enabled) {
 
 function toggleFullscreen() {
   const target = document.getElementById("stage");
-  if (document.fullscreenElement) {
-    document.exitFullscreen();
-  } else {
-    (target.requestFullscreen ?? target.webkitRequestFullscreen)?.call(target);
+  try {
+    if (document.fullscreenElement) {
+      document.exitFullscreen()?.catch?.(() => {});
+    } else {
+      (target.requestFullscreen ?? target.webkitRequestFullscreen)?.call(target)?.catch?.(() => {});
+    }
+  } catch (error) {
+    // Embedded frames may forbid fullscreen - not worth interrupting the game.
+    console.debug("fullscreen unavailable:", error.message);
   }
 }
 
@@ -339,6 +344,15 @@ function toggleHelp() {
   const hidden = ui.help.classList.toggle("hidden");
   ui.buttons.help.classList.toggle("on", !hidden);
   ui.buttons.help.classList.toggle("off", hidden);
+}
+
+/** Pointer lock is optional (and may be denied inside an iframe). */
+function lockPointer() {
+  try {
+    ui.canvas.requestPointerLock?.()?.catch?.(() => {});
+  } catch (error) {
+    console.debug("pointer lock unavailable:", error.message);
+  }
 }
 
 ui.start.addEventListener("click", () => {
@@ -353,6 +367,13 @@ ui.buttons.help.addEventListener("click", toggleHelp);
 
 window.addEventListener("resize", () => state.renderer?.resize());
 document.addEventListener("fullscreenchange", () => setTimeout(() => state.renderer?.resize(), 60));
+
+// The canvas box can change without a window resize (panels, fullscreen,
+// embedded frames), so watch it directly where that is supported.
+if (typeof ResizeObserver !== "undefined") {
+  const stage = document.getElementById("screen");
+  if (stage) new ResizeObserver(() => state.renderer?.resize()).observe(stage);
+}
 
 // Pause the game when the tab is hidden (the engine clock keeps running, so
 // this also prevents a huge catch-up burst on return).
