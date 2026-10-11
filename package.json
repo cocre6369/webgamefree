@@ -15,7 +15,8 @@
     "audio-sim": "node tools/audio-worklet-sim.mjs",
     "decompile": "node tools/decompile.mjs",
     "decompile:full": "node tools/decompile.mjs --full",
-    "fetch-wad": "node tools/fetch-wad.mjs"
+    "fetch-wad": "node tools/fetch-wad.mjs",
+    "play-link": "node tools/play-link.mjs"
   },
   "devDependencies": {
     "binaryen": "132.0.0",

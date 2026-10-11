@@ -14,14 +14,38 @@ game data is [Freedoom](https://freedoom.github.io) Phase 1, which is BSD licens
 
 ---
 
-## Run it
+## ▶ Play it now
+
+**[cocre6369.github.io/webgamefree](https://cocre6369.github.io/webgamefree/)** — click it,
+wait a few seconds for the 10 MiB of game data, press **▶ Play**. Nothing to install, no
+plugin, no account; savegames live in your browser.
+
+The site is the `web/` directory of this repository, published by
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) — no build step on the
+server, the engine and the game data are committed.
+
+`node tools/play-link.mjs` prints the current links, including a CDN link pinned to the
+latest commit that needs no repository settings at all:
+
+```
+GitHub Pages   https://cocre6369.github.io/webgamefree/
+jsDelivr CDN   https://cdn.jsdelivr.net/gh/cocre6369/webgamefree@<commit>/web/index.html
+```
+
+## Run it locally
 
 ```bash
 node serve.mjs          # then open http://localhost:8000
+
+# or with Python, if you prefer:
+python3 -m http.server --directory web 8000
 ```
 
 That is the whole setup — no build step, no toolchain, nothing to download: the
-10 MiB of game data and the 183 KiB engine are already in `web/`.
+10 MiB of game data and the 183 KiB engine are already in `web/`.  The local server
+adds `application/wasm` and COOP/COEP headers, which is what unlocks the
+AudioWorklet mixer; on GitHub Pages the game runs the same, using the
+ScriptProcessor mixer instead.
 
 * **Arrow keys** walk and turn, **Ctrl** fires, **Space** opens doors, **Shift** runs
 * **Esc** menu, **Tab** automap, **1**–**7** weapons, **F5/F9** quicksave/quickload
@@ -167,8 +191,9 @@ web/js/                  wasi.js doom.js renderer.js audio.js audio-worklet.js
                          music.js input.js savedata.js main.js
 web/doom.wasm            the built engine
 web/assets/              Freedoom IWAD (gzipped) + its licence and credits
+.github/workflows/       pages.yml - publishes web/ to GitHub Pages
 tools/                   smoke test, browser simulation, audio simulation,
-                         decompiler, WAD fetcher
+                         decompiler, WAD fetcher, play-link
 docs/decompiled/         api.md, exports.wat - what is inside doom.wasm
 docs/screenshot-*.png    screenshots, written by the smoke test
 ```

@@ -15,6 +15,12 @@ on:
       - "web/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
+  # Pages can only be switched on by the repository owner (Settings -> Pages ->
+  # Source: GitHub Actions).  Until that happens the deploy step fails with
+  # "Get Pages site failed"; this schedule means the site publishes itself
+  # within a few minutes of the switch being flipped, with nothing else to do.
+  schedule:
+    - cron: "*/20 * * * *"
 
 permissions:
   contents: read
