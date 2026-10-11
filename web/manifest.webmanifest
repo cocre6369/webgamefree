@@ -1,0 +1,13 @@
+{
+  "name": "Freedoom in WebAssembly",
+  "short_name": "Freedoom wasm",
+  "description": "The open source DOOM engine and Freedoom game data, compiled to WebAssembly. Playable offline, no install.",
+  "start_url": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#08080b",
+  "theme_color": "#0b0b0f",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
