@@ -5,21 +5,24 @@ name: Play (GitHub Pages)
 #
 # The build artefacts (web/doom.wasm, web/assets/freedoom1.wad.gz) are committed,
 # so publishing is just a checkout and an upload: about 10 MB, no toolchain.
+#
+# GitHub Pages has to be switched on once by the repository owner
+# (Settings -> Pages -> Source: "GitHub Actions"); no API token available to a
+# workflow can do it.  Until then this workflow stays green and prints exactly
+# where to click; once it is on, the next push - or the next scheduled run -
+# publishes the game.
 
 on:
   push:
     branches:
       - main
-      - arena/e4d79228-webgamefree
     paths:
       - "web/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
-  # Pages can only be switched on by the repository owner (Settings -> Pages ->
-  # Source: GitHub Actions).  Until that happens the deploy step fails with
-  # "Get Pages site failed"; this schedule means the site publishes itself
-  # within a few minutes of the switch being flipped, with nothing else to do.
   schedule:
+    # Retry every 20 minutes so the site appears by itself shortly after Pages
+    # is enabled.  Delete this block once the link is live (or to stop the runs).
     - cron: "*/20 * * * *"
 
 permissions:
@@ -29,12 +32,14 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     name: Assemble the site
     runs-on: ubuntu-latest
+    outputs:
+      pages: ${{ steps.pages.outputs.enabled }}
     steps:
       - uses: actions/checkout@v4
 
@@ -48,16 +53,43 @@ jobs:
           echo "game   : $(du -h web/assets/freedoom1.wad.gz | cut -f1)"
           echo "total  : $(du -sh web | cut -f1)"
 
+      - name: Is GitHub Pages switched on?
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 404 means definitively "not enabled" -> skip publishing with a clear
+          # note.  Anything else (e.g. the API refusing to be read) is unknown,
+          # so carry on and let configure-pages report the truth: never silently
+          # skip a publish just because a probe failed.
+          if output=$(gh api "repos/${GITHUB_REPOSITORY}/pages" 2>&1); then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "Pages is enabled - publishing web/."
+          elif printf '%s' "$output" | grep -qiE 'not found|404'; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### ⚠️ One click left: switch GitHub Pages on"
+              echo
+              echo "**Settings → Pages → Source: “GitHub Actions”**"
+              echo
+              echo "<${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/settings/pages>"
+              echo
+              echo "This workflow then publishes the game to"
+              echo "<https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/>"
+              echo "within 20 minutes - or immediately if you press *Re-run all jobs*."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning title=Enable GitHub Pages::Settings -> Pages -> Source: \"GitHub Actions\"  (${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/settings/pages). This workflow retries every 20 minutes and publishes the game as soon as it is on."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Could not read the Pages settings::Trying to publish anyway. ${output}"
+          fi
+
       - name: Configure Pages
+        if: steps.pages.outputs.enabled == 'true'
         uses: actions/configure-pages@v5
-        with:
-          # Try to switch Pages on automatically (Source: GitHub Actions) using
-          # the workflow's own token.  If the repository's settings do not allow
-          # that, this step says so and the one-time manual switch is:
-          #   Settings -> Pages -> Source: "GitHub Actions"
-          enablement: true
 
       - name: Upload the game
+        if: steps.pages.outputs.enabled == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: web
@@ -65,6 +97,7 @@ jobs:
   deploy:
     name: Publish
     needs: build
+    if: needs.build.outputs.pages == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

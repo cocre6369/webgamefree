@@ -24,6 +24,15 @@ The site is the `web/` directory of this repository, published by
 [`.github/workflows/pages.yml`](.github/workflows/pages.yml) — no build step on the
 server, the engine and the game data are committed.
 
+> **If that link 404s**, GitHub Pages has not been switched on for this repository yet —
+> it takes one click and only the repository owner can do it:
+>
+> **Settings → [Pages](https://github.com/cocre6369/webgamefree/settings/pages) → Source: “GitHub Actions”**
+>
+> Nothing else is needed: the workflow retries every 20 minutes and publishes the game
+> as soon as the source is set (or press *Re-run all jobs* on the latest run in the
+> [Actions tab](https://github.com/cocre6369/webgamefree/actions) to publish immediately).
+
 `node tools/play-link.mjs` prints the current links, including a CDN link pinned to the
 latest commit that needs no repository settings at all:
 
