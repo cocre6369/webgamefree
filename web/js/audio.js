@@ -42,13 +42,27 @@ export class AudioEngine {
     return this.context.sampleRate || 44100;
   }
 
+  /** Frames currently queued for the audio device (diagnostics). */
+  get latencyFrames() {
+    if (!this._ring) return 0;
+    const { header, capacity } = this._ring;
+    const queued = Atomics.load(header, 0) - Atomics.load(header, 1);
+    return queued >= 0 && queued <= capacity ? queued : 0;
+  }
+
   async start() {
     if (this.running) return this;
+    this.startedAt = performance.now();
     const frames = 1024;
     this.chunkFrames = frames;
     this._bufferPointer = this.doom.prepareAudio({ sampleRate: Math.round(this.sampleRate), maxFrames: frames });
 
-    const canUseWorklet = typeof AudioWorkletNode !== "undefined" && typeof SharedArrayBuffer !== "undefined" && self.crossOriginIsolated;
+    // SharedArrayBuffer only exists in a cross-origin isolated document, and
+    // the worklet needs it to talk to the game loop.
+    const canUseWorklet =
+      typeof AudioWorkletNode !== "undefined" &&
+      typeof SharedArrayBuffer !== "undefined" &&
+      globalThis.crossOriginIsolated === true;
 
     if (canUseWorklet) {
       try {
@@ -93,6 +107,12 @@ export class AudioEngine {
       capacity,
     };
     this.mode = "worklet";
+
+    // Safety net: a worklet that never consumes samples (blocked context,
+    // suspended device, hostile browser) must not silence the game.  Watch the
+    // read counter and drop to the ScriptProcessor path if it does not move.
+    this._watchdog = { at: performance.now(), read: Atomics.load(header, 1) };
+
     this._refill();
   }
 
@@ -100,10 +120,12 @@ export class AudioEngine {
     const ring = this._ring;
     if (!ring) return;
     const { header, samples, capacity } = ring;
-    const write = Atomics.load(header, 0);
+    let write = Atomics.load(header, 0);
     const read = Atomics.load(header, 1);
+    // Both counters only ever increase (the worklet wraps when *indexing*, not
+    // when counting), so this is the number of frames waiting to be played.
     let queued = write - read;
-    if (queued < 0) queued += capacity * 1000; // the worklet wrapped to 0
+    if (queued < 0) queued = 0;
     const target = Math.round(this.sampleRate * TARGET_LATENCY_S);
 
     let guard = 0;
@@ -145,7 +167,33 @@ export class AudioEngine {
 
   /** Called from the game loop: keep the worklet's ring buffer stocked. */
   pump() {
-    if (this.mode === "worklet") this._refill();
+    if (this.mode !== "worklet") return;
+    this._refill();
+
+    const now = performance.now();
+    if (this._watchdog && now - this._watchdog.at > 2000) {
+      const read = Atomics.load(this._ring.header, 1);
+      if (read === this._watchdog.read) {
+        console.warn("AudioWorklet is not consuming audio - falling back to ScriptProcessor");
+        this._fallbackToScriptProcessor();
+        return;
+      }
+      this._watchdog = { at: now, read };
+    }
+  }
+
+  _fallbackToScriptProcessor() {
+    try {
+      this._node?.disconnect();
+    } catch {
+      /* ignore */
+    }
+    this._node = null;
+    this._ring = null;
+    this._watchdog = null;
+    this.mode = "none";
+    this._startScriptProcessor(this.chunkFrames);
+    this.mode = "scriptprocessor";
   }
 
   setSfxEnabled(enabled) {

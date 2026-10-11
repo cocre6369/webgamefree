@@ -30,6 +30,11 @@ function arg(name, fallback) {
 const PORT = Number(arg("port", process.env.PORT || 8000));
 const HOST = arg("host", "0.0.0.0");
 const ROOT = resolve(HERE, arg("root", "web"));
+// Cross-origin isolation enables SharedArrayBuffer and therefore the
+// glitch-free AudioWorklet mixer.  Turn it off with --no-isolation if the page
+// needs to be embedded somewhere that refuses those headers; the game then
+// uses the ScriptProcessor mixer instead.
+const ISOLATED = !process.argv.includes("--no-isolation");
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -78,12 +83,14 @@ const server = createServer((request, response) => {
     "content-type": MIME[extension] || "application/octet-stream",
     "content-length": statSync(file).size,
     "cache-control": "no-cache",
-    // Cross-origin isolation: enables SharedArrayBuffer for the audio worklet.
-    "cross-origin-opener-policy": "same-origin",
-    "cross-origin-embedder-policy": "require-corp",
-    "cross-origin-resource-policy": "same-origin",
     "x-content-type-options": "nosniff",
   };
+  if (ISOLATED) {
+    // Cross-origin isolation: enables SharedArrayBuffer for the audio worklet.
+    headers["cross-origin-opener-policy"] = "same-origin";
+    headers["cross-origin-embedder-policy"] = "require-corp";
+    headers["cross-origin-resource-policy"] = "same-origin";
+  }
 
   response.writeHead(200, headers);
   if (request.method === "HEAD") {
@@ -105,5 +112,5 @@ server.listen(PORT, HOST, () => {
   console.log(`Freedoom wasm server`);
   console.log(`  root : ${ROOT}`);
   console.log(`  url  : http://${shown}:${PORT}/`);
-  console.log(`  coop : enabled (SharedArrayBuffer / AudioWorklet available)`);
+  console.log(`  coop : ${ISOLATED ? "enabled (SharedArrayBuffer / AudioWorklet available)" : "disabled (ScriptProcessor mixer)"}`);
 });

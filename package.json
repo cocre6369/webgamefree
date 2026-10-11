@@ -7,10 +7,15 @@
   "type": "module",
   "scripts": {
     "build": "./build.sh",
+    "rebuild": "./build.sh --clean",
     "serve": "node serve.mjs",
-    "smoke": "node tools/smoke.mjs",
+    "test": "node tools/smoke.mjs --play && node tools/browser-sim.mjs && node tools/audio-worklet-sim.mjs",
+    "smoke": "node tools/smoke.mjs --play",
+    "browser-sim": "node tools/browser-sim.mjs",
+    "audio-sim": "node tools/audio-worklet-sim.mjs",
     "decompile": "node tools/decompile.mjs",
-    "compress": "node tools/compress-wad.mjs"
+    "decompile:full": "node tools/decompile.mjs --full",
+    "fetch-wad": "node tools/fetch-wad.mjs"
   },
   "devDependencies": {
     "binaryen": "132.0.0",
